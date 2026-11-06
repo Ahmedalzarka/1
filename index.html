@@ -174,11 +174,12 @@ function setVote(pid,ci,val){
   render(); dirty=true; clearTimeout(saveTimer); saveTimer=setTimeout(flush,600);
 }
 async function flush(){
-  if(saving||!dirty||!db) return; saving=true; dirty=false; status('جاري الحفظ...');
-  try{ await api('umrah_ballots?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:myKey,r:myVotes,updated_at:new Date().toISOString()})}); ballots[myKey]={r:clone(myVotes)}; status('تم الحفظ'); }
-  catch(err){ status('لم يتم الحفظ ('+(err.code||'خطأ')+')',true); }
-  saving=false; if(dirty) flush();
+  if(saving||!dirty||!db) return; saving=true; dirty=false; status('جاري الحفظ...'); let failed=false;
+  try{ await api('umrah_ballots?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:myKey,r:myVotes,updated_at:new Date().toISOString()})}); ballots[myKey]={r:clone(myVotes)}; status('تم الحفظ'); hideErr(); }
+  catch(err){ status('لم يتم الحفظ، بيحاول تاني...',true); showErr(); failed=true; }
+  saving=false; if(failed){ dirty=true; setTimeout(flush,5000); } else if(dirty) flush();
 }
+
 
 // ---------- scoring ----------
 function stats(pid){
@@ -202,16 +203,22 @@ function fmt(v){ return v==null?'-':(Math.round(v*10)/10).toFixed(1); }
 function render(){ if(view==='vote') renderGrid(); else if(view==='report') renderReport(); else renderLogistics(); }
 // ---------- logistics ----------
 const CONTACTS=['zarka','omar','elsayed','essam','gohar','eita','hamza'];
-let logs={};
+let logs={}, pendingLog=0;
+function showErr(){ let d=document.getElementById('noSave'); if(!d){ d=document.createElement('div'); d.id='noSave'; d.style.cssText='background:#ef4444;color:#fff;padding:10px 16px;font-weight:700;text-align:center'; document.body.insertBefore(d,document.body.firstChild); }
+  d.textContent='آخر تعديل ماتحفظش! اتأكد من النت وجرب تاني.'; }
+function hideErr(){ const d=document.getElementById('noSave'); if(d) d.remove(); }
 const DEFAULT_TOTAL=41000;
 const BOOLS=[['in_group','اتضاف للجروب؟'],['visa','الفيزا محجوزة؟'],['flight','الطيران؟'],['room_mecca','ليه مكان في أوضة مكة؟'],['room_madina','ليه مكان في أوضة المدينة؟'],['military','عمل تصريح الجيش؟']];
 function paidCell(r){ const x=r.l.paid_amount??'', y=r.l.total??DEFAULT_TOTAL, full=r.l.paid_amount!=null&&+r.l.paid_amount>=+y;
   return `<span style="display:inline-flex;gap:4px;align-items:center;white-space:nowrap"><input type="number" min="0" class="money" data-money="${r.id}" data-f="paid_amount" value="${x}" placeholder="0" style="width:90px;padding:4px 6px;${full?'border-color:var(--g);color:var(--g)':''}"> / <input type="number" min="0" class="money" data-money="${r.id}" data-f="total" value="${y}" style="width:90px;padding:4px 6px"></span>`; }
 function yn(id,field,val){ return `<span class="yn"><button class="y ${val===true?'on':''}" data-log="${id}" data-f="${field}" data-val="1">نعم</button><button class="n ${val===false?'on':''}" data-log="${id}" data-f="${field}" data-val="0">لا</button></span>`; }
 async function setLog(id,fields){
-  const row=Object.assign({id,manual:false},logs[id]||{},fields,{updated_at:new Date().toISOString()}); logs[id]=row; render();
-  try{ await api('umrah_logistics?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)}); status('تم الحفظ'); }
-  catch(e){ status('لم يتم الحفظ',true); }
+  // send ONLY the changed fields, so two people editing the same person never overwrite each other's columns
+  const patch=Object.assign({id},fields,{updated_at:new Date().toISOString()});
+  logs[id]=Object.assign({id,manual:false},logs[id]||{},patch); render(); pendingLog++;
+  try{ await api('umrah_logistics?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(patch)}); status('تم الحفظ'); hideErr(); }
+  catch(e){ status('لم يتم الحفظ',true); showErr(); }
+  pendingLog--;
 }
 function renderLogistics(){
   const rows=[]; people.forEach(p=>{ const l=logs[p.id]; if(l&&l.tell===true) rows.push({id:p.id,name:p.name,l,manual:false}); });
@@ -276,6 +283,7 @@ async function load(){
   render();
 }
 db=true;
+window.addEventListener('beforeunload',e=>{ if(dirty||saving||pendingLog){ e.preventDefault(); e.returnValue=''; } });
 (()=>{
   let id=null; const q=new URLSearchParams(location.search).get('me');
   try{ id=q||localStorage.getItem('umrah_vid'); if(!id){ id='v'+Math.random().toString(36).slice(2)+Date.now().toString(36); } localStorage.setItem('umrah_vid',id); }catch(e){ id=id||'v'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
@@ -283,7 +291,7 @@ db=true;
   myKey=id; me='';
   render();
   load().then(()=>{ reorder(); render(); status('متصل'); }).catch(()=>status('تعذر الاتصال بالسيرفر',true));
-  setInterval(()=>{ if(!document.hidden && !dirty && !saving && !(document.activeElement&&['SELECT','INPUT'].includes(document.activeElement.tagName))) load().catch(()=>{}); },15000);
+  setInterval(()=>{ if(!document.hidden && !dirty && !saving && !pendingLog && !(document.activeElement&&['SELECT','INPUT'].includes(document.activeElement.tagName))) load().catch(()=>{}); },15000);
 })();
 </script>
 </body>
