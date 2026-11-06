@@ -48,7 +48,14 @@ td.nm .x:hover{opacity:1;color:var(--r)}
 .yn .y.on{background:var(--g);border-color:var(--g);color:#032}
 .yn .n.on{background:var(--r);border-color:var(--r);color:#fff}
 select{font-family:inherit;font-size:14px;background:#0b0d11;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
-#logistics th{min-width:140px}
+#report thead th,#logistics thead th{min-width:0;max-width:none;width:auto}
+#report thead th{min-width:120px;max-width:150px;font-size:12px}
+#report thead th.rank{min-width:36px;width:36px}
+#report thead th.nm{min-width:130px}
+#report td{padding:4px 6px}
+#report .pill{min-width:44px;padding:2px 6px;font-size:12px}
+#report .yn button{padding:2px 8px;font-size:12px}
+#logistics thead th{min-width:140px}
 .err{color:var(--r)}
 </style>
 </head>
