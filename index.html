@@ -204,7 +204,7 @@ function render(){ if(view==='vote') renderGrid(); else if(view==='report') rend
 const CONTACTS=['zarka','omar','elsayed','essam','gohar','eita','hamza'];
 let logs={};
 const DEFAULT_TOTAL=41000;
-const BOOLS=[['visa','الفيزا محجوزة؟'],['flight','الطيران؟'],['room_mecca','ليه مكان في أوضة مكة؟'],['room_madina','ليه مكان في أوضة المدينة؟'],['military','عمل تصريح الجيش؟']];
+const BOOLS=[['in_group','اتضاف للجروب؟'],['visa','الفيزا محجوزة؟'],['flight','الطيران؟'],['room_mecca','ليه مكان في أوضة مكة؟'],['room_madina','ليه مكان في أوضة المدينة؟'],['military','عمل تصريح الجيش؟']];
 function paidCell(r){ const x=r.l.paid_amount??'', y=r.l.total??DEFAULT_TOTAL, full=r.l.paid_amount!=null&&+r.l.paid_amount>=+y;
   return `<span style="display:inline-flex;gap:4px;align-items:center;white-space:nowrap"><input type="number" min="0" class="money" data-money="${r.id}" data-f="paid_amount" value="${x}" placeholder="0" style="width:90px;padding:4px 6px;${full?'border-color:var(--g);color:var(--g)':''}"> / <input type="number" min="0" class="money" data-money="${r.id}" data-f="total" value="${y}" style="width:90px;padding:4px 6px"></span>`; }
 function yn(id,field,val){ return `<span class="yn"><button class="y ${val===true?'on':''}" data-log="${id}" data-f="${field}" data-val="1">نعم</button><button class="n ${val===false?'on':''}" data-log="${id}" data-f="${field}" data-val="0">لا</button></span>`; }
