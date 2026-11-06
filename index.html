@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تصويت العمرة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1115;--card:#171a21;--line:#2a2f3a;--txt:#e8eaf0;--mut:#8b93a5;--g:#22c55e;--r:#ef4444;--y:#eab308;--acc:#38bdf8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:Cairo,system-ui,sans-serif;font-size:14px}
+header{position:sticky;top:0;z-index:20;background:#12151b;border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+header h1{font-size:18px;margin:0 0 0 auto}
+button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:8px;padding:6px 12px;font-size:14px}
+button.pri{background:var(--acc);color:#04121b;border-color:var(--acc);font-weight:700}
+input{font-family:inherit;font-size:15px;background:#0b0d11;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.who{color:var(--mut)} .who b{color:var(--txt)}
+#status{color:var(--mut);font-size:12px}
+.wrap{overflow:auto;max-height:calc(100vh - 60px)}
+table{border-collapse:separate;border-spacing:0;min-width:100%}
+th,td{border-bottom:1px solid var(--line);border-left:1px solid var(--line);padding:6px 8px;text-align:center;vertical-align:middle}
+thead th{position:sticky;top:0;background:#151922;z-index:5;font-weight:600;font-size:12px;line-height:1.5;min-width:340px;max-width:350px;vertical-align:top;color:#cfd5e2}
+th.nm,td.nm{position:sticky;right:0;background:#151922;z-index:6;text-align:right;min-width:150px;font-weight:700;white-space:nowrap}
+thead th.nm{z-index:7}
+td.nm .x{opacity:.35;border:none;background:none;padding:0 6px;font-size:13px}
+td.nm .x:hover{opacity:1;color:var(--r)}
+.v{display:inline-flex;gap:3px}
+.v button{width:30px;height:30px;padding:0;border-radius:50%;font-size:14px;opacity:.35;font-weight:700}
+.v button.on{opacity:1;box-shadow:0 0 0 2px #fff3}
+.v .num{width:24px!important;height:24px!important;font-size:12px!important;background:#232833;border-color:#3a4150;color:var(--txt);opacity:.75}
+.v .num.on{opacity:1}
+.v .mid{width:auto;border-radius:15px;padding:0 8px;font-size:12px}
+.v .yes{background:var(--g);border-color:var(--g);color:#032}
+.v .mid{background:var(--y);border-color:var(--y);color:#320}
+.v .no{background:var(--r);border-color:var(--r);color:#300}
+.mini{display:block;font-size:11px;color:var(--mut);margin-top:3px}
+.overlay{position:fixed;inset:0;background:#000c;display:flex;align-items:center;justify-content:center;z-index:50}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;width:min(420px,92vw);display:flex;flex-direction:column;gap:12px}
+.box h2{margin:0;font-size:20px}
+.hidden{display:none!important}
+.pill{display:inline-block;min-width:56px;padding:3px 8px;border-radius:6px;font-weight:700;color:#0b0d11}
+.rank{color:var(--mut);width:36px}
+#report td{font-size:13px}
+.err{color:var(--r)}
+</style>
+</head>
+<body>
+
+<div id="login" class="overlay hidden">
+  <form class="box" id="loginForm">
+    <h2>تصويت العمرة</h2>
+    <div class="who">اكتب اسمك عشان تدخل وتصوّت</div>
+    <input id="nameIn" placeholder="اسمك" autocomplete="off" required>
+    <button class="pri" type="submit">دخول</button>
+  </form>
+</div>
+
+<div id="addBox" class="overlay hidden">
+  <form class="box" id="addForm">
+    <h2>إضافة شخص</h2>
+    <input id="addIn" placeholder="الاسم" autocomplete="off" required>
+    <div style="display:flex;gap:8px"><button class="pri" type="submit">إضافة</button><button type="button" id="addCancel">إلغاء</button></div>
+  </form>
+</div>
+
+<div id="delBox" class="overlay hidden">
+  <div class="box">
+    <h2>حذف <span id="delName"></span>؟</h2>
+    <div style="display:flex;gap:8px"><button class="pri" id="delOk" style="background:var(--r);border-color:var(--r)">حذف</button><button id="delCancel">إلغاء</button></div>
+  </div>
+</div>
+
+<header>
+  <h1>تصويت العمرة</h1>
+  <b id="me" class="hidden"></b>
+  <button id="addBtn">+ إضافة شخص</button>
+  <button id="viewBtn" class="pri">التقرير</button>
+  <span id="status">جاري التحميل...</span>
+</header>
+
+<div class="wrap" id="voteView"><table id="grid"></table></div>
+<div class="wrap hidden" id="reportView"><table id="report"></table></div>
+
+<script>
+const CRIT = [
+"حسن الخلق",
+"لا يعاني من اضطرابات نفسية او افات القلبية قد تؤثر على المجموعة ولا يُتوقع علاجها بالعمرة",
+"مش بينكش، بيمشي الدنيا، بيلتزم بقرارات المشرفين، هين لين سهل",
+"يقدر يرتبط بالجماعة، ثقافة \"احنا\" مش \"أنا\"",
+"بيتعبد، مش طالع رحلة",
+"قادر على التقشف احيانا مش هيأفف",
+"بيظهر شغف للتدين",
+"بيظهر شغف للقرب مننا وتعزيز العلاقة من قبل الرحلة",
+"يُتوقع انه بعد الرحلة هيتعلق بينا مش واخدها حدث",
+"القدرة المادية",
+"بإحساسك، عايزه ييجي؟"
+];
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let db=null, me=null, myKey=null, people=[], ballots={}, myVotes={}, view='vote', pendingDel=null;
+
+function keyOf(name){ // stable ascii id for a voter name
+  let h1=0x811c9dc5, h2=5381; const s=name.trim().replace(/\s+/g,' ');
+  for(const ch of s){const c=ch.codePointAt(0); h1=Math.imul(h1^c,16777619)>>>0; h2=(Math.imul(h2,33)+c)>>>0;}
+  return 'v'+h1.toString(16)+h2.toString(16);
+}
+
+// ---------- login ----------
+try{ const saved=localStorage.getItem('umrah_voter'); if(saved) $('nameIn').value=saved; }catch(e){}
+$('loginForm').onsubmit=e=>{e.preventDefault(); const n=$('nameIn').value.trim(); if(!n) return;
+  me=n; myKey=keyOf(n); try{localStorage.setItem('umrah_voter',n);}catch(e){}
+  $('me').textContent=n; $('login').classList.add('hidden');
+  myVotes=clone(norm(ballots[myKey])); render(); };
+
+
+// ---------- add / delete ----------
+$('addBtn').onclick=()=>{$('addIn').value='';$('addBox').classList.remove('hidden');$('addIn').focus();};
+$('addCancel').onclick=()=>$('addBox').classList.add('hidden');
+$('addForm').onsubmit=async e=>{e.preventDefault(); const n=$('addIn').value.trim(); if(!n||!db) return;
+  $('addBox').classList.add('hidden');
+  const order=people.reduce((m,p)=>Math.max(m,p.ord||0),0)+1;
+  try{ await api('umrah_people',{method:'POST',body:JSON.stringify({id:'p'+Date.now().toString(36),name:n,ord:order})}); await load(); }catch(err){ status('تعذر الإضافة',true); } };
+$('delCancel').onclick=()=>$('delBox').classList.add('hidden');
+$('delOk').onclick=async()=>{ $('delBox').classList.add('hidden'); if(!pendingDel||!db) return;
+  try{ await api('umrah_people?id=eq.'+encodeURIComponent(pendingDel),{method:'DELETE'}); await load(); }catch(err){ status('تعذر الحذف',true); } };
+
+$('viewBtn').onclick=()=>{ view = view==='vote'?'report':'vote';
+  $('viewBtn').textContent = view==='vote'?'التقرير':'رجوع للتصويت';
+  $('voteView').classList.toggle('hidden',view!=='vote'); $('reportView').classList.toggle('hidden',view!=='report'); render(); };
+
+function status(t,err){ $('status').textContent=t; $('status').className=err?'err':''; }
+
+// ---------- voting ----------
+// ratings: 0..10 count in score; 'x' = لا أدري (not counted). Old yes/no/idk (field "votes") read as 10 / 0 / 'x'.
+function norm(b){ if(!b) return {}; if(b.r) return b.r; const out={}, v=b.votes||{};
+  for(const pid in v){ out[pid]={}; for(const ci in v[pid]){ const x=v[pid][ci]; out[pid][ci]= x===1?10 : x===-1?0 : 'x'; } } return out; }
+const clone=o=>JSON.parse(JSON.stringify(o||{}));
+let saveTimer=null, saving=false, dirty=false, migrated=false;
+function setVote(pid,ci,val){
+  if(!myKey) return;
+  myVotes[pid]=myVotes[pid]||{};
+  if(myVotes[pid][ci]===val) delete myVotes[pid][ci]; else myVotes[pid][ci]=val;
+  render(); dirty=true; clearTimeout(saveTimer); saveTimer=setTimeout(flush,600);
+}
+async function flush(){
+  if(saving||!dirty||!db) return; saving=true; dirty=false; status('جاري الحفظ...');
+  try{ await api('umrah_ballots?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:myKey,r:myVotes,updated_at:new Date().toISOString()})}); ballots[myKey]={r:clone(myVotes)}; status('تم الحفظ'); }
+  catch(err){ status('لم يتم الحفظ ('+(err.code||'خطأ')+')',true); }
+  saving=false; if(dirty) flush();
+}
+
+// ---------- scoring ----------
+function stats(pid){
+  const per=CRIT.map(()=>({sum:0,n:0,x:0})); let voters=0;
+  const sheets=[]; for(const k in ballots) sheets.push(k===myKey?myVotes:norm(ballots[k]));
+  if(myKey && !ballots[myKey]) sheets.push(myVotes);
+  for(const sh of sheets){ const v=sh[pid]; if(!v) continue; let any=false;
+    for(const ci in v){ if(!per[ci]) continue; const x=v[ci]; if(typeof x==='number'){per[ci].sum+=x;per[ci].n++;any=true;} else if(x==='x') per[ci].x++; }
+    if(any) voters++; }
+  const rates=per.map(c=>c.n?c.sum/c.n:null);
+  const valid=rates.filter(r=>r!=null);
+  const score=valid.length?valid.reduce((a,b)=>a+b,0)/valid.length:null; // each criterion counts equally
+  const votes=per.reduce((a,c)=>a+c.n,0);
+  return {rates,score,votes,voters,per};
+}
+function color(v){ if(v==null) return '#3a3f4b'; return `hsl(${Math.round(v/10*120)} 70% 50%)`; }
+function fmt(v){ return v==null?'-':(Math.round(v*10)/10).toFixed(1); }
+
+// ---------- render ----------
+function render(){ if(view==='vote') renderGrid(); else renderReport(); }
+function renderGrid(){
+  let h='<thead><tr><th class="nm">الاسم</th>'+CRIT.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr></thead><tbody>';
+  if(!people.length) h+=`<tr><td class="nm">لا يوجد أشخاص بعد</td>${CRIT.map(()=>'<td></td>').join('')}</tr>`;
+  for(const [i,p] of people.entries()){
+    const mv=myVotes[p.id]||{}, s=stats(p.id);
+    h+=`<tr><td class="nm"><button class="x" data-del="${p.id}" title="حذف">✕</button><span style="color:var(--mut);margin-left:6px">${i+1}.</span>${esc(p.name)}</td>`;
+    CRIT.forEach((_,ci)=>{ const cur=mv[ci];
+      h+='<td><span class="v">'+[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="num ${cur===n?'on':''}" style="${cur===n?`background:${color(n)};border-color:${color(n)};color:#0b0d11`:''}" data-p="${p.id}" data-c="${ci}" data-v="${n}">${n}</button>`).join('')+
+        `<button class="mid ${cur==='x'?'on':''}" data-p="${p.id}" data-c="${ci}" data-v="x">لا أدري</button></span>`+
+        `<span class="mini">${s.per[ci].n} صوت · متوسط ${fmt(s.rates[ci])}</span></td>`; });
+    h+='</tr>';
+  }
+  $('grid').innerHTML=h+'</tbody>';
+}
+function renderReport(){
+  const rows=people.map(p=>({p,...stats(p.id)})).sort((a,b)=>(b.score??-1)-(a.score??-1)||b.votes-a.votes);
+  const nVoters=Object.keys(ballots).length+(myKey&&!ballots[myKey]?1:0);
+  let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم</th><th>النتيجة (من 10)</th><th>عدد الأصوات</th><th>عدد المصوّتين</th>'+CRIT.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr></thead><tbody>';
+  rows.forEach((r,i)=>{
+    h+=`<tr><td class="rank">${i+1}</td><td class="nm" style="border-right:4px solid ${color(r.score)}">${esc(r.p.name)}</td>
+      <td><span class="pill" style="background:${color(r.score)}">${fmt(r.score)}</span></td>
+      <td>${r.votes}</td><td>${r.voters} / ${nVoters}</td>`+
+      r.rates.map((x,ci)=>`<td><span class="pill" style="background:${color(x)}">${fmt(x)}</span><span class="mini">${r.per[ci].n} صوت · ${r.per[ci].x} لا أدري</span></td>`).join('')+'</tr>';
+  });
+  $('report').innerHTML=h+'</tbody>';
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button[data-v]'); if(b){ const v=b.dataset.v; setVote(b.dataset.p,+b.dataset.c, v==='x'?'x':+v); return; }
+  const d=e.target.closest('button[data-del]'); if(d){ pendingDel=d.dataset.del; const p=people.find(x=>x.id===pendingDel); $('delName').textContent=p?p.name:''; $('delBox').classList.remove('hidden'); }
+});
+
+// ---------- data ----------
+const SB='https://ajyqyfqdwujeayavsqwc.supabase.co/rest/v1/', KEY='sb_publishable_iUd0HRcOwi0g3Nu-3dCcFQ_JSHUGMN0';
+async function api(path,opt={}){ const r=await fetch(SB+path,{...opt,headers:{apikey:KEY,'Content-Type':'application/json',...(opt.headers||{})}});
+  if(!r.ok) throw new Error(r.status+' '+await r.text()); const t=await r.text(); return t?JSON.parse(t):null; }
+async function load(){
+  const [ps,bs]=await Promise.all([api('umrah_people?select=id,name,ord&order=ord'),api('umrah_ballots?select=id,r')]);
+  people=ps; const nb={}; bs.forEach(b=>nb[b.id]=b); ballots=nb;
+  if(!dirty && !saving) myVotes=clone(norm(ballots[myKey]));
+  render();
+}
+db=true;
+(()=>{
+  let id=null; const q=new URLSearchParams(location.search).get('me');
+  try{ id=q||localStorage.getItem('umrah_vid'); if(!id){ id='v'+Math.random().toString(36).slice(2)+Date.now().toString(36); } localStorage.setItem('umrah_vid',id); }catch(e){ id=id||'v'+Math.random().toString(36).slice(2)+Date.now().toString(36); }
+  if(q){ try{ history.replaceState(null,'',location.pathname); }catch(e){} }
+  myKey=id; me='';
+  render();
+  load().then(()=>status('متصل')).catch(()=>status('تعذر الاتصال بالسيرفر',true));
+  setInterval(()=>{ if(!document.hidden && !dirty && !saving) load().catch(()=>{}); },15000);
+})();
+</script>
+</body>
+</html>
