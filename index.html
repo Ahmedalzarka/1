@@ -185,11 +185,11 @@ function renderGrid(){
 function renderReport(){
   const rows=people.map(p=>({p,...stats(p.id)})).sort((a,b)=>(b.score??-1)-(a.score??-1)||b.votes-a.votes);
   const nVoters=Object.keys(ballots).length+(myKey&&!ballots[myKey]?1:0);
-  let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم</th><th>النتيجة (من 10)</th><th>عدد الأصوات</th><th>عدد المصوّتين</th>'+CRIT.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr></thead><tbody>';
+  let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم</th><th>النتيجة (من 10)</th><th>عدد المصوّتين</th>'+CRIT.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr></thead><tbody>';
   rows.forEach((r,i)=>{
     h+=`<tr><td class="rank">${i+1}</td><td class="nm" style="border-right:4px solid ${color(r.score)}">${esc(r.p.name)}</td>
       <td><span class="pill" style="background:${color(r.score)}">${fmt(r.score)}</span></td>
-      <td>${r.votes}</td><td>${r.voters} / ${nVoters}</td>`+
+      <td>${r.voters} / ${nVoters}</td>`+
       r.rates.map((x,ci)=>`<td><span class="pill" style="background:${color(x)}">${fmt(x)}</span><span class="mini">${r.per[ci].n} صوت · ${r.per[ci].x} لا أدري</span></td>`).join('')+'</tr>';
   });
   $('report').innerHTML=h+'</tbody>';
