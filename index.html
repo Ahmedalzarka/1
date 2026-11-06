@@ -99,6 +99,9 @@ const CRIT = [
 // weights (points) per criterion, same order as CRIT; GATE = disqualify if average below min
 const W=[0,0,4,4,4,3,5,3,3,0,2];
 const GATE=[{i:0,min:7},{i:1,min:8}];
+let gridOrder=[]; // least-voted first; recomputed on load and when returning from report (not on every click)
+function reorder(){ gridOrder=people.map(p=>{ const s=stats(p.id); return {id:p.id,n:s.votes+s.per.reduce((a,c)=>a+c.x,0),o:p.ord||0}; })
+  .sort((a,b)=>a.n-b.n||a.o-b.o).map(x=>x.id); }
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let db=null, me=null, myKey=null, people=[], ballots={}, myVotes={}, view='vote', pendingDel=null;
@@ -129,7 +132,7 @@ $('delOk').onclick=async()=>{ $('delBox').classList.add('hidden'); if(!pendingDe
   try{ await api('umrah_people?id=eq.'+encodeURIComponent(pendingDel),{method:'DELETE'}); await load(); }catch(err){ status('تعذر الحذف',true); } };
 
 $('viewBtn').onclick=()=>{ view = view==='vote'?'report':'vote';
-  $('viewBtn').textContent = view==='vote'?'التقرير':'رجوع للتصويت';
+  $('viewBtn').textContent = view==='vote'?'التقرير':'رجوع للتصويت'; if(view==='vote') reorder();
   $('voteView').classList.toggle('hidden',view!=='vote'); $('reportView').classList.toggle('hidden',view!=='report'); render(); };
 
 function status(t,err){ $('status').textContent=t; $('status').className=err?'err':''; }
@@ -176,7 +179,8 @@ function render(){ if(view==='vote') renderGrid(); else renderReport(); }
 function renderGrid(){
   let h='<thead><tr><th class="nm">الاسم</th>'+CRIT.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr></thead><tbody>';
   if(!people.length) h+=`<tr><td class="nm">لا يوجد أشخاص بعد</td>${CRIT.map(()=>'<td></td>').join('')}</tr>`;
-  for(const [i,p] of people.entries()){
+  const known=new Set(gridOrder), list=gridOrder.map(id=>people.find(p=>p.id===id)).filter(Boolean).concat(people.filter(p=>!known.has(p.id)));
+  for(const [i,p] of list.entries()){
     const mv=myVotes[p.id]||{}, s=stats(p.id);
     h+=`<tr><td class="nm"><button class="x" data-del="${p.id}" title="حذف">✕</button><span style="color:var(--mut);margin-left:6px">${i+1}.</span>${esc(p.name)}</td>`;
     CRIT.forEach((_,ci)=>{ const cur=mv[ci];
@@ -224,7 +228,7 @@ db=true;
   if(q){ try{ history.replaceState(null,'',location.pathname); }catch(e){} }
   myKey=id; me='';
   render();
-  load().then(()=>status('متصل')).catch(()=>status('تعذر الاتصال بالسيرفر',true));
+  load().then(()=>{ reorder(); render(); status('متصل'); }).catch(()=>status('تعذر الاتصال بالسيرفر',true));
   setInterval(()=>{ if(!document.hidden && !dirty && !saving) load().catch(()=>{}); },15000);
 })();
 </script>
