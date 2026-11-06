@@ -88,14 +88,16 @@ select{font-family:inherit;font-size:14px;background:#0b0d11;color:var(--txt);bo
 <header>
   <h1>تصويت العمرة</h1>
   <b id="me" class="hidden"></b>
-  <button id="addBtn">+ إضافة شخص</button>
   <button class="tab pri" data-view="vote">التصويت</button>
   <button class="tab" data-view="report">التقرير</button>
   <button class="tab" data-view="logistics">اللوجستيات</button>
   <span id="status">جاري التحميل...</span>
 </header>
 
-<div class="wrap" id="voteView"><table id="grid"></table></div>
+<div class="wrap" id="voteView">
+  <form id="voteAdd" style="display:flex;gap:8px;padding:12px 16px"><input id="voteAddIn" placeholder="إضافة شخص" autocomplete="off"><button class="pri" type="submit">+ إضافة</button></form>
+  <table id="grid"></table>
+</div>
 <div class="wrap hidden" id="reportView"><table id="report"></table></div>
 <div class="wrap hidden" id="logisticsView">
   <form id="logAdd" style="display:flex;gap:8px;padding:12px 16px"><input id="logAddIn" placeholder="إضافة شخص يدويًا" autocomplete="off"><button class="pri" type="submit">+ إضافة</button></form>
@@ -141,7 +143,7 @@ $('loginForm').onsubmit=e=>{e.preventDefault(); const n=$('nameIn').value.trim()
 
 
 // ---------- add / delete ----------
-$('addBtn').onclick=()=>{$('addIn').value='';$('addBox').classList.remove('hidden');$('addIn').focus();};
+$('voteAdd').onsubmit=e=>{ e.preventDefault(); const n=$('voteAddIn').value.trim(); if(!n) return; $('voteAddIn').value=''; $('addIn').value=n; $('addForm').onsubmit({preventDefault(){}}); };
 $('addCancel').onclick=()=>$('addBox').classList.add('hidden');
 $('addForm').onsubmit=async e=>{e.preventDefault(); const n=$('addIn').value.trim(); if(!n||!db) return;
   $('addBox').classList.add('hidden');
@@ -153,7 +155,6 @@ $('delOk').onclick=async()=>{ $('delBox').classList.add('hidden'); if(!pendingDe
 
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ view=t.dataset.view; if(view==='vote') reorder();
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('pri',x===t));
-  $('addBtn').classList.toggle('hidden',view!=='vote');
   ['vote','report','logistics'].forEach(v=>$(v+'View').classList.toggle('hidden',view!==v)); render(); });
 
 function status(t,err){ $('status').textContent=t; $('status').className=err?'err':''; }
