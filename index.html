@@ -208,7 +208,7 @@ function showErr(){ let d=document.getElementById('noSave'); if(!d){ d=document.
   d.textContent='آخر تعديل ماتحفظش! اتأكد من النت وجرب تاني.'; }
 function hideErr(){ const d=document.getElementById('noSave'); if(d) d.remove(); }
 const DEFAULT_TOTAL=41000;
-const BOOLS=[['in_group','اتضاف للجروب؟'],['visa','الفيزا محجوزة؟'],['flight','الطيران؟'],['room_mecca','ليه مكان في أوضة مكة؟'],['room_madina','ليه مكان في أوضة المدينة؟'],['military','عمل تصريح الجيش؟']];
+const BOOLS=[['visa','الفيزا محجوزة؟'],['flight','الطيران؟'],['room_mecca','ليه مكان في أوضة مكة؟'],['room_madina','ليه مكان في أوضة المدينة؟'],['military','عمل تصريح الجيش؟']];
 function paidCell(r){ const x=r.l.paid_amount??'', y=r.l.total??DEFAULT_TOTAL, full=r.l.paid_amount!=null&&+r.l.paid_amount>=+y;
   return `<span style="display:inline-flex;gap:4px;align-items:center;white-space:nowrap"><input type="number" min="0" class="money" data-money="${r.id}" data-f="paid_amount" value="${x}" placeholder="0" style="width:90px;padding:4px 6px;${full?'border-color:var(--g);color:var(--g)':''}"> / <input type="number" min="0" class="money" data-money="${r.id}" data-f="total" value="${y}" style="width:90px;padding:4px 6px"></span>`; }
 function yn(id,field,val){ return `<span class="yn"><button class="y ${val===true?'on':''}" data-log="${id}" data-f="${field}" data-val="1">نعم</button><button class="n ${val===false?'on':''}" data-log="${id}" data-f="${field}" data-val="0">لا</button></span>`; }
@@ -223,11 +223,11 @@ async function setLog(id,fields){
 function renderLogistics(){
   const rows=[]; people.forEach(p=>{ const l=logs[p.id]; if(l&&l.tell===true) rows.push({id:p.id,name:p.name,l,manual:false}); });
   Object.values(logs).filter(l=>l.manual).forEach(l=>rows.push({id:l.id,name:l.name,l,manual:true}));
-  let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم</th><th>مين هيكلمه؟</th><th>هييجي؟</th><th>دفع (المدفوع / الإجمالي)</th>'+BOOLS.map(b=>`<th>${b[1]}</th>`).join('')+'</tr></thead><tbody>';
-  if(!rows.length) h+='<tr><td></td><td class="nm">مفيش حد لسه. علّم "هنقوله؟" بنعم في التقرير أو ضيف يدويًا.</td>'+'<td></td>'.repeat(3+BOOLS.length)+'</tr>';
+  let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم</th><th>مين هيكلمه؟</th><th>هييجي؟</th><th>اتضاف للجروب؟</th><th>دفع (المدفوع / الإجمالي)</th>'+BOOLS.map(b=>`<th>${b[1]}</th>`).join('')+'</tr></thead><tbody>';
+  if(!rows.length) h+='<tr><td></td><td class="nm">مفيش حد لسه. علّم "هنقوله؟" بنعم في التقرير أو ضيف يدويًا.</td>'+'<td></td>'.repeat(4+BOOLS.length)+'</tr>';
   rows.forEach((r,i)=>{ h+=`<tr><td class="rank">${i+1}</td><td class="nm">${r.manual?`<button class="x" data-logdel="${r.id}" title="حذف">✕</button>`:''}${esc(r.name)}${r.manual?' <span class="mini" style="display:inline">(يدوي)</span>':''}</td>
     <td><select data-contact="${r.id}"><option value="">-</option>${CONTACTS.map(c=>`<option ${r.l.contact===c?'selected':''}>${c}</option>`).join('')}</select></td>
-    <td>${yn(r.id,'coming',r.l.coming)}</td><td>${paidCell(r)}</td>${BOOLS.map(b=>`<td>${yn(r.id,b[0],r.l[b[0]])}</td>`).join('')}</tr>`; });
+    <td>${yn(r.id,'coming',r.l.coming)}</td><td>${yn(r.id,'in_group',r.l.in_group)}</td><td>${paidCell(r)}</td>${BOOLS.map(b=>`<td>${yn(r.id,b[0],r.l[b[0]])}</td>`).join('')}</tr>`; });
   $('logistics').innerHTML=h+'</tbody>';
 }
 $('logAdd').onsubmit=e=>{ e.preventDefault(); const n=$('logAddIn').value.trim(); if(!n) return; $('logAddIn').value='';
