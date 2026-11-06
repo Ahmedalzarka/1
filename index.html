@@ -96,6 +96,9 @@ const CRIT = [
 "القدرة المادية",
 "بإحساسك، عايزه ييجي؟"
 ];
+// weights (points) per criterion, same order as CRIT; GATE = disqualify if average below min
+const W=[0,0,4,4,4,3,5,3,3,0,2];
+const GATE=[{i:0,min:7},{i:1,min:8}];
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let db=null, me=null, myKey=null, people=[], ballots={}, myVotes={}, view='vote', pendingDel=null;
@@ -159,10 +162,11 @@ function stats(pid){
     for(const ci in v){ if(!per[ci]) continue; const x=v[ci]; if(typeof x==='number'){per[ci].sum+=x;per[ci].n++;any=true;} else if(x==='x') per[ci].x++; }
     if(any) voters++; }
   const rates=per.map(c=>c.n?c.sum/c.n:null);
-  const valid=rates.filter(r=>r!=null);
-  const score=valid.length?valid.reduce((a,b)=>a+b,0)/valid.length:null; // each criterion counts equally
+  let ws=0,wt=0; rates.forEach((r,i)=>{ if(r!=null&&W[i]>0){ ws+=r*W[i]; wt+=W[i]; } });
+  const score=wt?ws/wt:null; // weighted average of criterion averages
+  const dq=GATE.filter(g=>rates[g.i]!=null&&rates[g.i]<g.min).map(g=>g.i);
   const votes=per.reduce((a,c)=>a+c.n,0);
-  return {rates,score,votes,voters,per};
+  return {rates,score,votes,voters,per,dq};
 }
 function color(v){ if(v==null) return '#3a3f4b'; return `hsl(${Math.round(v/10*120)} 70% 50%)`; }
 function fmt(v){ return v==null?'-':(Math.round(v*10)/10).toFixed(1); }
@@ -184,12 +188,14 @@ function renderGrid(){
   $('grid').innerHTML=h+'</tbody>';
 }
 function renderReport(){
-  const rows=people.map(p=>({p,...stats(p.id)})).sort((a,b)=>(b.score??-1)-(a.score??-1)||b.votes-a.votes);
+  const rows=people.map(p=>({p,...stats(p.id)})).sort((a,b)=>(a.dq.length>0)-(b.dq.length>0)||(b.score??-1)-(a.score??-1)||b.votes-a.votes);
   const nVoters=Object.keys(ballots).length+(myKey&&!ballots[myKey]?1:0);
   let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم</th><th>النتيجة (من 10)</th><th>عدد المصوّتين</th>'+CRIT.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr></thead><tbody>';
+  h=h.replace(/<th>([^<]*)<\/th>/g,(m,t)=>{ const i=CRIT.indexOf(t.replace(/&quot;/g,'"').replace(/&amp;/g,'&')); if(i<0) return m; const g=GATE.find(x=>x.i===i);
+    return `<th>${t}<span class="mini" style="color:#38bdf8">${g?'استبعاد لو أقل من '+g.min:W[i]+' نقاط'}</span></th>`; });
   rows.forEach((r,i)=>{
-    h+=`<tr><td class="rank">${i+1}</td><td class="nm" style="border-right:4px solid ${color(r.score)}">${esc(r.p.name)}</td>
-      <td><span class="pill" style="background:${color(r.score)}">${fmt(r.score)}</span></td>
+    h+=`<tr><td class="rank">${r.dq.length?'-':i+1}</td><td class="nm" style="border-right:4px solid ${color(r.score)}">${esc(r.p.name)}</td>
+      <td>${r.dq.length?'<span class="pill" style="background:#ef4444;color:#fff">مستبعد</span><span class="mini">'+r.dq.map(i=>CRIT[i].split(' ').slice(0,3).join(' ')).join('، ')+'</span>':`<span class="pill" style="background:${color(r.score)}">${fmt(r.score)}</span>`}</td>
       <td>${r.voters} / ${nVoters}</td>`+
       r.rates.map((x,ci)=>`<td><span class="pill" style="background:${color(x)}">${fmt(x)}</span><span class="mini">${r.per[ci].n} صوت · ${r.per[ci].x} لا أدري</span></td>`).join('')+'</tr>';
   });
