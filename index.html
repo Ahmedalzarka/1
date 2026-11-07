@@ -94,8 +94,8 @@ select{font-family:inherit;font-size:14px;background:#0b0d11;color:var(--txt);bo
   <h1>تصويت العمرة</h1>
   <b id="me" class="hidden"></b>
   <button class="tab" data-view="vote" disabled title="التصويت مقفول" style="opacity:.35;cursor:not-allowed;filter:grayscale(1)">التصويت (مقفول)</button>
-  <button class="tab pri" data-view="report">التقرير</button>
-  <button class="tab" data-view="logistics">اللوجستيات</button>
+  <button class="tab" data-view="report">التقرير</button>
+  <button class="tab pri" data-view="logistics">اللوجستيات</button>
   <span id="status">جاري التحميل...</span>
 </header>
 
@@ -103,8 +103,8 @@ select{font-family:inherit;font-size:14px;background:#0b0d11;color:var(--txt);bo
   <form id="voteAdd" style="display:flex;gap:8px;padding:12px 16px"><input id="voteAddIn" placeholder="إضافة شخص" autocomplete="off"><button class="pri" type="submit">+ إضافة</button></form>
   <table id="grid"></table>
 </div>
-<div class="wrap" id="reportView"><table id="report"></table></div>
-<div class="wrap hidden" id="logisticsView">
+<div class="wrap hidden" id="reportView"><table id="report"></table></div>
+<div class="wrap" id="logisticsView">
   <form id="logAdd" style="display:flex;gap:8px;padding:12px 16px"><input id="logAddIn" placeholder="إضافة شخص يدويًا" autocomplete="off"><button class="pri" type="submit">+ إضافة</button></form>
   <table id="logistics"></table>
 </div>
@@ -131,7 +131,7 @@ function reorder(){ gridOrder=people.map(p=>{ const s=stats(p.id); return {id:p.
   .sort((a,b)=>a.n-b.n||a.o-b.o).map(x=>x.id); }
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let db=null, me=null, myKey=null, people=[], ballots={}, myVotes={}, view='report', pendingDel=null;
+let db=null, me=null, myKey=null, people=[], ballots={}, myVotes={}, view='logistics', pendingDel=null;
 
 function keyOf(name){ // stable ascii id for a voter name
   let h1=0x811c9dc5, h2=5381; const s=name.trim().replace(/\s+/g,' ');
