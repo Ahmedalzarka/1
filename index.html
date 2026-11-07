@@ -56,6 +56,9 @@ select{font-family:inherit;font-size:14px;background:#0b0d11;color:var(--txt);bo
 #report .pill{min-width:44px;padding:2px 6px;font-size:12px}
 #report .yn button{padding:2px 8px;font-size:12px}
 #logistics thead th{min-width:110px;font-size:12px}
+#logistics tr.clus td{background:var(--rowbg)}
+#logistics tr.clus td.nm{background:var(--rowbg)}
+#logistics tr.first td{border-top:3px solid #4b5563}
 #logistics td{padding:4px 6px}
 #logistics .yn button{padding:2px 8px;font-size:12px}
 .err{color:var(--r)}
@@ -202,6 +205,7 @@ function fmt(v){ return v==null?'-':(Math.round(v*10)/10).toFixed(1); }
 // ---------- render ----------
 function render(){ if(view==='vote') renderGrid(); else if(view==='report') renderReport(); else renderLogistics(); }
 // ---------- logistics ----------
+const SHADES=['#1d2b45','#2a1f3d','#1f3a2c','#3d2a1f','#1f3a3d','#3d1f2e','#33361d'];
 const CONTACTS=['zarka','omar','elsayed','essam','gohar','eita','hamza'];
 let logs={}, pendingLog=0;
 function showErr(){ let d=document.getElementById('noSave'); if(!d){ d=document.createElement('div'); d.id='noSave'; d.style.cssText='background:#ef4444;color:#fff;padding:10px 16px;font-weight:700;text-align:center'; document.body.insertBefore(d,document.body.firstChild); }
@@ -223,9 +227,13 @@ async function setLog(id,fields){
 function renderLogistics(){
   const rows=[]; people.forEach(p=>{ const l=logs[p.id]; if(l&&l.tell===true) rows.push({id:p.id,name:p.name,l,manual:false}); });
   Object.values(logs).filter(l=>l.manual).forEach(l=>rows.push({id:l.id,name:l.name,l,manual:true}));
+  // cluster by contact person (in CONTACTS order), unassigned last; stable within each cluster
+  const ci=r=>{ const k=CONTACTS.indexOf(r.l.contact); return k<0?CONTACTS.length:k; };
+  rows.forEach((r,i)=>r._i=i); rows.sort((a,b)=>ci(a)-ci(b)||a._i-b._i);
   let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم</th><th>مين هيكلمه؟</th><th>هييجي؟</th><th>اتضاف للجروب؟</th><th>دفع (المدفوع / الإجمالي)</th>'+BOOLS.map(b=>`<th>${b[1]}</th>`).join('')+'</tr></thead><tbody>';
   if(!rows.length) h+='<tr><td></td><td class="nm">مفيش حد لسه. علّم "هنقوله؟" بنعم في التقرير أو ضيف يدويًا.</td>'+'<td></td>'.repeat(4+BOOLS.length)+'</tr>';
-  rows.forEach((r,i)=>{ h+=`<tr><td class="rank">${i+1}</td><td class="nm">${r.manual?`<button class="x" data-logdel="${r.id}" title="حذف">✕</button>`:''}${esc(r.name)}${r.manual?' <span class="mini" style="display:inline">(يدوي)</span>':''}</td>
+  rows.forEach((r,i)=>{ const k=ci(r), bg=k<CONTACTS.length?SHADES[k%SHADES.length]:'#12151b', first=i===0||ci(rows[i-1])!==k;
+    h+=`<tr style="--rowbg:${bg}" class="clus${first&&i>0?' first':''}"><td class="rank">${i+1}</td><td class="nm">${r.manual?`<button class="x" data-logdel="${r.id}" title="حذف">✕</button>`:''}${esc(r.name)}${r.manual?' <span class="mini" style="display:inline">(يدوي)</span>':''}</td>
     <td><select data-contact="${r.id}"><option value="">-</option>${CONTACTS.map(c=>`<option ${r.l.contact===c?'selected':''}>${c}</option>`).join('')}</select></td>
     <td>${yn(r.id,'coming',r.l.coming)}</td><td>${yn(r.id,'in_group',r.l.in_group)}</td><td>${paidCell(r)}</td>${BOOLS.map(b=>`<td>${yn(r.id,b[0],r.l[b[0]])}</td>`).join('')}</tr>`; });
   $('logistics').innerHTML=h+'</tbody>';
