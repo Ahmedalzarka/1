@@ -121,7 +121,7 @@ const CRIT = [
 "بإحساسك، عايزه ييجي؟"
 ];
 // weights (points) per criterion, same order as CRIT; GATE = disqualify if average below min
-const W=[0,0,4,4,4,3,5,3,3,0,2];
+const W=[14,9,9,9,7,7,14,14,14,3,0]; // percent, total 100
 const GATE=[{i:0,min:7},{i:1,min:8}];
 let gridOrder=[]; // least-voted first; recomputed on load and when returning from report (not on every click)
 function reorder(){ gridOrder=people.map(p=>{ const s=stats(p.id); return {id:p.id,n:s.votes+s.per.reduce((a,c)=>a+c.x,0),o:p.ord||0}; })
@@ -254,7 +254,7 @@ function renderReport(){
   const nVoters=Object.keys(ballots).length+(myKey&&!ballots[myKey]?1:0);
   let h='<thead><tr><th class="rank">#</th><th>هنقوله؟</th><th class="nm">الاسم</th><th>النتيجة (من 10)</th><th>عدد المصوّتين</th>'+CRIT.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr></thead><tbody>';
   h=h.replace(/<th>([^<]*)<\/th>/g,(m,t)=>{ const i=CRIT.indexOf(t.replace(/&quot;/g,'"').replace(/&amp;/g,'&')); if(i<0) return m; const g=GATE.find(x=>x.i===i);
-    return `<th>${t}<span class="mini" style="color:#38bdf8">${g?'استبعاد لو أقل من '+g.min:W[i]+' نقاط'}</span></th>`; });
+    return `<th>${t}<span class="mini" style="color:#38bdf8">${W[i]}%${g?' · استبعاد لو أقل من '+g.min:''}</span></th>`; });
   rows.forEach((r,i)=>{
     h+=`<tr><td class="rank">${r.dq.length?'-':i+1}</td><td>${yn(r.p.id,'tell',(logs[r.p.id]||{}).tell)}</td><td class="nm" style="border-right:4px solid ${color(r.score)}">${esc(r.p.name)}</td>
       <td>${r.dq.length?'<span class="pill" style="background:#ef4444;color:#fff">مستبعد</span><span class="mini">'+r.dq.map(i=>CRIT[i].split(' ').slice(0,3).join(' ')).join('، ')+'</span>':`<span class="pill" style="background:${color(r.score)}">${fmt(r.score)}</span>`}</td>
