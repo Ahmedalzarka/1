@@ -16,7 +16,11 @@ button.pri{background:var(--acc);color:#04121b;border-color:var(--acc);font-weig
 input{font-family:inherit;font-size:15px;background:#0b0d11;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 .who{color:var(--mut)} .who b{color:var(--txt)}
 #status{color:var(--mut);font-size:12px}
-.wrap{overflow:auto;max-height:calc(100vh - 60px);overscroll-behavior:contain}
+/* app layout: header fixed at top, only the table area scrolls (nothing can slide under the header) */
+html,body{height:100%}
+body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+body>header{position:relative!important;flex:none}
+.wrap{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
 /* iOS Safari: keep the sticky header above everything (no transforms on sticky cells: they make Safari drop them) */
 thead th{z-index:20!important}
 thead th.nm{z-index:22!important}
@@ -307,7 +311,7 @@ async function load(){
 }
 db=true;
 // size the scroll area to the real visible height (mobile browser bars change it)
-function fit(){ const h=document.querySelector('header').offsetHeight; document.querySelectorAll('.wrap').forEach(w=>w.style.maxHeight=(window.innerHeight-h)+'px'); }
+function fit(){} // layout handled by CSS flex
 window.addEventListener('resize',fit); window.addEventListener('load',fit); setTimeout(fit,0);
 document.addEventListener('scroll',()=>{ lastScroll=Date.now(); },true);
 document.addEventListener('touchstart',()=>{ lastScroll=Date.now(); },{passive:true,capture:true});
