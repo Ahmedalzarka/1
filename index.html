@@ -16,8 +16,11 @@ button.pri{background:var(--acc);color:#04121b;border-color:var(--acc);font-weig
 input{font-family:inherit;font-size:15px;background:#0b0d11;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 .who{color:var(--mut)} .who b{color:var(--txt)}
 #status{color:var(--mut);font-size:12px}
-.wrap{overflow:auto;max-height:calc(100vh - 60px);-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-thead th,th.nm,td.nm{will-change:transform;-webkit-transform:translateZ(0);transform:translateZ(0);backface-visibility:hidden}
+.wrap{overflow:auto;max-height:calc(100vh - 60px);overscroll-behavior:contain}
+/* iOS Safari: keep the sticky header above everything (no transforms on sticky cells: they make Safari drop them) */
+thead th{z-index:20!important}
+thead th.nm{z-index:22!important}
+td.nm{z-index:10!important}
 table{border-collapse:separate;border-spacing:0;min-width:100%}
 th,td{border-bottom:1px solid var(--line);border-left:1px solid var(--line);padding:6px 8px;text-align:center;vertical-align:middle}
 thead th{position:sticky;top:0;background:#151922;z-index:5;font-weight:600;font-size:12px;line-height:1.5;min-width:340px;max-width:350px;vertical-align:top;color:#cfd5e2}
