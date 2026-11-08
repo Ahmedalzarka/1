@@ -235,12 +235,12 @@ function renderLogistics(){
   const out=r=>r.l.coming===false?1:0; // not coming -> bottom of the page
   rows.forEach((r,i)=>r._i=i); rows.sort((a,b)=>out(a)-out(b)||ci(a)-ci(b)||a._i-b._i);
   const grp=r=>out(r)?'out':ci(r);
-  let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم</th><th>مين هيكلمه؟</th><th>هييجي؟</th><th>اتضاف للجروب؟</th><th>دفع (المدفوع / الإجمالي)</th>'+BOOLS.map(b=>`<th>${b[1]}</th>`).join('')+'</tr></thead><tbody>';
-  if(!rows.length) h+='<tr><td></td><td class="nm">مفيش حد لسه. علّم "هنقوله؟" بنعم في التقرير أو ضيف يدويًا.</td>'+'<td></td>'.repeat(4+BOOLS.length)+'</tr>';
+  let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم</th><th>مين هيكلمه؟</th><th>اتكلم؟</th><th>هييجي؟</th><th>اتضاف للجروب؟</th><th>دفع (المدفوع / الإجمالي)</th>'+BOOLS.map(b=>`<th>${b[1]}</th>`).join('')+'</tr></thead><tbody>';
+  if(!rows.length) h+='<tr><td></td><td class="nm">مفيش حد لسه. علّم "هنقوله؟" بنعم في التقرير أو ضيف يدويًا.</td>'+'<td></td>'.repeat(5+BOOLS.length)+'</tr>';
   rows.forEach((r,i)=>{ const k=ci(r), bg=k<CONTACTS.length?SHADES[k%SHADES.length]:'#12151b', first=i===0||grp(rows[i-1])!==grp(r);
     h+=`<tr style="--rowbg:${bg}" class="clus${first&&i>0?' first':''}${r.l.coming===false?' out':''}"><td class="rank">${i+1}</td><td class="nm">${r.manual?`<button class="x" data-logdel="${r.id}" title="حذف">✕</button>`:''}${esc(r.name)}${r.manual?' <span class="mini" style="display:inline">(يدوي)</span>':''}</td>
     <td><select data-contact="${r.id}"><option value="">-</option>${CONTACTS.map(c=>`<option ${r.l.contact===c?'selected':''}>${c}</option>`).join('')}</select></td>
-    <td>${yn(r.id,'coming',r.l.coming)}</td><td>${yn(r.id,'in_group',r.l.in_group)}</td><td>${paidCell(r)}</td>${BOOLS.map(b=>`<td>${yn(r.id,b[0],r.l[b[0]])}</td>`).join('')}</tr>`; });
+    <td>${yn(r.id,'contacted',r.l.contacted)}</td><td>${yn(r.id,'coming',r.l.coming)}</td><td>${yn(r.id,'in_group',r.l.in_group)}</td><td>${paidCell(r)}</td>${BOOLS.map(b=>`<td>${yn(r.id,b[0],r.l[b[0]])}</td>`).join('')}</tr>`; });
   $('logistics').innerHTML=h+'</tbody>';
 }
 $('logAdd').onsubmit=e=>{ e.preventDefault(); const n=$('logAddIn').value.trim(); if(!n) return; $('logAddIn').value='';
