@@ -16,7 +16,8 @@ button.pri{background:var(--acc);color:#04121b;border-color:var(--acc);font-weig
 input{font-family:inherit;font-size:15px;background:#0b0d11;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 .who{color:var(--mut)} .who b{color:var(--txt)}
 #status{color:var(--mut);font-size:12px}
-.wrap{overflow:auto;max-height:calc(100vh - 60px)}
+.wrap{overflow:auto;max-height:calc(100vh - 60px);-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+thead th,th.nm,td.nm{will-change:transform;-webkit-transform:translateZ(0);transform:translateZ(0);backface-visibility:hidden}
 table{border-collapse:separate;border-spacing:0;min-width:100%}
 th,td{border-bottom:1px solid var(--line);border-left:1px solid var(--line);padding:6px 8px;text-align:center;vertical-align:middle}
 thead th{position:sticky;top:0;background:#151922;z-index:5;font-weight:600;font-size:12px;line-height:1.5;min-width:340px;max-width:350px;vertical-align:top;color:#cfd5e2}
@@ -162,7 +163,7 @@ $('delOk').onclick=async()=>{ $('delBox').classList.add('hidden'); if(!pendingDe
 
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ if(t.disabled||t.dataset.view==='vote') return; view=t.dataset.view; if(view==='vote') reorder();
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('pri',x===t));
-  ['vote','report','logistics'].forEach(v=>$(v+'View').classList.toggle('hidden',view!==v)); render(); });
+  ['vote','report','logistics'].forEach(v=>$(v+'View').classList.toggle('hidden',view!==v)); render(); fit(); });
 
 function status(t,err){ $('status').textContent=t; $('status').className=err?'err':''; }
 
@@ -291,13 +292,22 @@ document.addEventListener('click',e=>{
 const SB='https://ajyqyfqdwujeayavsqwc.supabase.co/rest/v1/', KEY='sb_publishable_iUd0HRcOwi0g3Nu-3dCcFQ_JSHUGMN0';
 async function api(path,opt={}){ const r=await fetch(SB+path,{...opt,headers:{apikey:KEY,'Content-Type':'application/json',...(opt.headers||{})}});
   if(!r.ok) throw new Error(r.status+' '+await r.text()); const t=await r.text(); return t?JSON.parse(t):null; }
+let lastSig='', lastScroll=0;
 async function load(){
-  const [ps,bs,ls]=await Promise.all([api('umrah_people?select=id,name,ord&order=ord'),api('umrah_ballots?select=id,r'),api('umrah_logistics?select=*&order=updated_at')]);
+  const [ps,bs,ls]=await Promise.all([api('umrah_people?select=id,name,ord&order=ord'),api('umrah_ballots?select=id,r'),api('umrah_logistics?select=*&order=id')]);
+  const sig=JSON.stringify([ps,bs,ls.map(({updated_at,...x})=>x)]);
+  if(sig===lastSig) return; // nothing changed -> don't rebuild the table (avoids flicker while scrolling)
+  lastSig=sig;
   people=ps; const nl={}; ls.forEach(l=>nl[l.id]=l); logs=nl; const nb={}; bs.forEach(b=>nb[b.id]=b); ballots=nb;
   if(!dirty && !saving) myVotes=clone(norm(ballots[myKey]));
   render();
 }
 db=true;
+// size the scroll area to the real visible height (mobile browser bars change it)
+function fit(){ const h=document.querySelector('header').offsetHeight; document.querySelectorAll('.wrap').forEach(w=>w.style.maxHeight=(window.innerHeight-h)+'px'); }
+window.addEventListener('resize',fit); window.addEventListener('load',fit); setTimeout(fit,0);
+document.addEventListener('scroll',()=>{ lastScroll=Date.now(); },true);
+document.addEventListener('touchstart',()=>{ lastScroll=Date.now(); },{passive:true,capture:true});
 window.addEventListener('beforeunload',e=>{ if(dirty||saving||pendingLog){ e.preventDefault(); e.returnValue=''; } });
 (()=>{
   let id=null; const q=new URLSearchParams(location.search).get('me');
@@ -306,7 +316,7 @@ window.addEventListener('beforeunload',e=>{ if(dirty||saving||pendingLog){ e.pre
   myKey=id; me='';
   render();
   load().then(()=>{ reorder(); render(); status('متصل'); }).catch(()=>status('تعذر الاتصال بالسيرفر',true));
-  setInterval(()=>{ if(!document.hidden && !dirty && !saving && !pendingLog && !(document.activeElement&&['SELECT','INPUT'].includes(document.activeElement.tagName))) load().catch(()=>{}); },15000);
+  setInterval(()=>{ if(Date.now()-lastScroll>4000 && !document.hidden && !dirty && !saving && !pendingLog && !(document.activeElement&&['SELECT','INPUT'].includes(document.activeElement.tagName))) load().catch(()=>{}); },15000);
 })();
 </script>
 </body>
