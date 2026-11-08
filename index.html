@@ -209,7 +209,8 @@ function fmt(v){ return v==null?'-':(Math.round(v*10)/10).toFixed(1); }
 function render(){ if(view==='vote') renderGrid(); else if(view==='report') renderReport(); else renderLogistics(); }
 // ---------- logistics ----------
 const SHADES=['#1d2b45','#2a1f3d','#1f3a2c','#3d2a1f','#1f3a3d','#3d1f2e','#33361d'];
-const CONTACTS=['zarka','omar','elsayed','essam','gohar','eita','hamza'];
+const CONTACTS=['zarka','omar','elsayed','essam','gohar','eita','hamza','Admin'];
+const ADMIN_BG='#4a3510';
 let logs={}, pendingLog=0;
 function showErr(){ let d=document.getElementById('noSave'); if(!d){ d=document.createElement('div'); d.id='noSave'; d.style.cssText='background:#ef4444;color:#fff;padding:10px 16px;font-weight:700;text-align:center'; document.body.insertBefore(d,document.body.firstChild); }
   d.textContent='آخر تعديل ماتحفظش! اتأكد من النت وجرب تاني.'; }
@@ -231,13 +232,14 @@ function renderLogistics(){
   const rows=[]; people.forEach(p=>{ const l=logs[p.id]; if(l&&l.tell===true) rows.push({id:p.id,name:p.name,l,manual:false}); });
   Object.values(logs).filter(l=>l.manual).forEach(l=>rows.push({id:l.id,name:l.name,l,manual:true}));
   // cluster by contact person (in CONTACTS order), unassigned last; stable within each cluster
-  const ci=r=>{ const k=CONTACTS.indexOf(r.l.contact); return k<0?CONTACTS.length:k; };
+  // order: contacts (zarka..hamza) -> unassigned -> Admin -> not coming
+  const ci=r=>{ const k=CONTACTS.indexOf(r.l.contact); if(r.l.contact==='Admin') return CONTACTS.length; return k<0?CONTACTS.length-1+0.5:k; };
   const out=r=>r.l.coming===false?1:0; // not coming -> bottom of the page
   rows.forEach((r,i)=>r._i=i); rows.sort((a,b)=>out(a)-out(b)||ci(a)-ci(b)||a._i-b._i);
   const grp=r=>out(r)?'out':ci(r);
   let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم</th><th>مين هيكلمه؟</th><th>كلمناه؟</th><th>هييجي؟</th><th>اتضاف للجروب؟</th><th>دفع (المدفوع / الإجمالي)</th>'+BOOLS.map(b=>`<th>${b[1]}</th>`).join('')+'</tr></thead><tbody>';
   if(!rows.length) h+='<tr><td></td><td class="nm">مفيش حد لسه. علّم "هنقوله؟" بنعم في التقرير أو ضيف يدويًا.</td>'+'<td></td>'.repeat(5+BOOLS.length)+'</tr>';
-  rows.forEach((r,i)=>{ const k=ci(r), bg=k<CONTACTS.length?SHADES[k%SHADES.length]:'#12151b', first=i===0||grp(rows[i-1])!==grp(r);
+  rows.forEach((r,i)=>{ const k=ci(r), bg=k===CONTACTS.length?ADMIN_BG:(Number.isInteger(k)?SHADES[k%SHADES.length]:'#12151b'), first=i===0||grp(rows[i-1])!==grp(r);
     h+=`<tr style="--rowbg:${bg}" class="clus${first&&i>0?' first':''}${r.l.coming===false?' out':''}"><td class="rank">${i+1}</td><td class="nm">${r.manual?`<button class="x" data-logdel="${r.id}" title="حذف">✕</button>`:''}${esc(r.name)}${r.manual?' <span class="mini" style="display:inline">(يدوي)</span>':''}</td>
     <td><select data-contact="${r.id}"><option value="">-</option>${CONTACTS.map(c=>`<option ${r.l.contact===c?'selected':''}>${c}</option>`).join('')}</select></td>
     <td>${yn(r.id,'contacted',r.l.contacted)}</td><td>${yn(r.id,'coming',r.l.coming)}</td><td>${yn(r.id,'in_group',r.l.in_group)}</td><td>${paidCell(r)}</td>${BOOLS.map(b=>`<td>${yn(r.id,b[0],r.l[b[0]])}</td>`).join('')}</tr>`; });
