@@ -55,6 +55,8 @@ td.nm .x:hover{opacity:1;color:var(--r)}
 .yn button.on{opacity:1;font-weight:700}
 .yn .y.on{background:var(--g);border-color:var(--g);color:#032}
 .yn .n.on{background:var(--r);border-color:var(--r);color:#fff}
+.yn .m{white-space:nowrap}
+.yn .m.on{background:var(--y);border-color:var(--y);color:#1a1400}
 select{font-family:inherit;font-size:14px;background:#0b0d11;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
 #report thead th,#logistics thead th{min-width:0;max-width:none;width:auto}
 #report thead th{min-width:120px;max-width:150px;font-size:12px}
@@ -227,6 +229,8 @@ const DEFAULT_TOTAL=41000;
 const BOOLS=[['visa','الفيزا محجوزة؟'],['flight','الطيران؟'],['room_mecca','ليه مكان في أوضة مكة؟'],['room_madina','ليه مكان في أوضة المدينة؟'],['military','عمل تصريح الجيش؟']];
 function paidCell(r){ const x=r.l.paid_amount??'', y=r.l.total??DEFAULT_TOTAL, full=r.l.paid_amount!=null&&+r.l.paid_amount>=+y;
   return `<span style="display:inline-flex;gap:4px;align-items:center;white-space:nowrap"><input type="number" min="0" class="money" data-money="${r.id}" data-f="paid_amount" value="${x}" placeholder="0" style="width:90px;padding:4px 6px;${full?'border-color:var(--g);color:var(--g)':''}"> / <input type="number" min="0" class="money" data-money="${r.id}" data-f="total" value="${y}" style="width:90px;padding:4px 6px"></span>`; }
+function comingCell(r){ const c=r.l.coming, lk=r.l.coming_likely===true&&c!==true&&c!==false;
+  return `<span class="yn"><button class="y ${c===true?'on':''}" data-log="${r.id}" data-f="coming" data-val="1">نعم</button><button class="m ${lk?'on':''}" data-likely="${r.id}">في الأغلب اه</button><button class="n ${c===false?'on':''}" data-log="${r.id}" data-f="coming" data-val="0">لا</button></span>`; }
 function yn(id,field,val){ return `<span class="yn"><button class="y ${val===true?'on':''}" data-log="${id}" data-f="${field}" data-val="1">نعم</button><button class="n ${val===false?'on':''}" data-log="${id}" data-f="${field}" data-val="0">لا</button></span>`; }
 async function setLog(id,fields){
   // send ONLY the changed fields, so two people editing the same person never overwrite each other's columns
@@ -250,7 +254,7 @@ function renderLogistics(){
   rows.forEach((r,i)=>{ const k=ci(r), bg=k===CONTACTS.length?ADMIN_BG:(Number.isInteger(k)?SHADES[k%SHADES.length]:'#12151b'), first=i===0||grp(rows[i-1])!==grp(r);
     h+=`<tr style="--rowbg:${bg}" class="clus${first&&i>0?' first':''}${r.l.coming===false?' out':''}"><td class="rank">${i+1}</td><td class="nm">${r.manual?`<button class="x" data-logdel="${r.id}" title="حذف">✕</button>`:''}${esc(r.name)}${r.manual?' <span class="mini" style="display:inline">(يدوي)</span>':''}</td>
     <td><select data-contact="${r.id}"><option value="">-</option>${CONTACTS.map(c=>`<option ${r.l.contact===c?'selected':''}>${c}</option>`).join('')}</select></td>
-    <td>${yn(r.id,'contacted',r.l.contacted)}</td><td>${yn(r.id,'coming',r.l.coming)}</td><td>${yn(r.id,'in_group',r.l.in_group)}</td><td>${paidCell(r)}</td>${BOOLS.map(b=>`<td>${yn(r.id,b[0],r.l[b[0]])}</td>`).join('')}</tr>`; });
+    <td>${yn(r.id,'contacted',r.l.contacted)}</td><td>${comingCell(r)}</td><td>${yn(r.id,'in_group',r.l.in_group)}</td><td>${paidCell(r)}</td>${BOOLS.map(b=>`<td>${yn(r.id,b[0],r.l[b[0]])}</td>`).join('')}</tr>`; });
   $('logistics').innerHTML=h+'</tbody>';
 }
 $('logAdd').onsubmit=e=>{ e.preventDefault(); const n=$('logAddIn').value.trim(); if(!n) return; $('logAddIn').value='';
@@ -289,7 +293,9 @@ function renderReport(){
 
 document.addEventListener('click',e=>{
   const lb=e.target.closest('button[data-log]'); if(lb){ const id=lb.dataset.log,f=lb.dataset.f,v=lb.dataset.val==='1'; const cur=(logs[id]||{})[f];
-    const extra=(!logs[id]&&people.find(p=>p.id===id))?{name:people.find(p=>p.id===id).name}:{}; setLog(id,{...extra,[f]:cur===v?null:v}); return; }
+    const extra=(!logs[id]&&people.find(p=>p.id===id))?{name:people.find(p=>p.id===id).name}:{}; setLog(id,{...extra,[f]:cur===v?null:v, ...(f==='coming'?{coming_likely:null}:{})}); return; }
+  const lk=e.target.closest('button[data-likely]'); if(lk){ const id=lk.dataset.likely, l=logs[id]||{}; const on=l.coming_likely===true&&l.coming!==true&&l.coming!==false;
+    const extra=(!logs[id]&&people.find(p=>p.id===id))?{name:people.find(p=>p.id===id).name}:{}; setLog(id,{...extra,coming:null,coming_likely:on?null:true}); return; }
   const ld=e.target.closest('button[data-logdel]'); if(ld){ const id=ld.dataset.logdel; delete logs[id]; render(); api('umrah_logistics?id=eq.'+encodeURIComponent(id),{method:'DELETE'}).catch(()=>status('تعذر الحذف',true)); return; }
   const b=e.target.closest('button[data-v]'); if(b){ const v=b.dataset.v; setVote(b.dataset.p,+b.dataset.c, v==='x'?'x':+v); return; }
   const d=e.target.closest('button[data-del]'); if(d){ pendingDel=d.dataset.del; const p=people.find(x=>x.id===pendingDel); $('delName').textContent=p?p.name:''; $('delBox').classList.remove('hidden'); }
