@@ -252,16 +252,21 @@ function renderLogistics(){
   const out=r=>r.l.coming===false?1:0; // not coming -> bottom of the page
   rows.forEach((r,i)=>r._i=i); rows.sort((a,b)=>out(a)-out(b)||ci(a)-ci(b)||a._i-b._i);
   const grp=r=>out(r)?'out':ci(r);
-  // counts shown under each header
-  const cnt=(f,v)=>rows.filter(r=>r.l[f]===v).length;
+  // counts shown under each header.
+  // Columns up to هييجي count everyone; columns after it count ONLY people marked "نعم" in هييجي.
   const sub=t=>`<span class="hc">${t}</span>`;
-  const ynSub=f=>sub(`نعم ${cnt(f,true)} · لا ${cnt(f,false)}`);
+  const going=rows.filter(r=>r.l.coming===true);
+  const ynSub=(f,set)=>{ const y=set.filter(r=>r.l[f]===true).length, n=set.filter(r=>r.l[f]===false).length; return sub(`نعم ${y} · لا ${n} · لسا ${set.length-y-n}`); };
   const sure=r=>r.l.coming===true||r.l.coming===false;
-  const comingSub=sub(`نعم ${cnt('coming',true)} · أغلب اه ${rows.filter(r=>!sure(r)&&r.l.coming_likely===true).length} · أغلب لا ${rows.filter(r=>!sure(r)&&r.l.coming_likely===false).length} · لا ${cnt('coming',false)}`);
-  const contactSub=sub(CONTACTS.map(c=>[c,rows.filter(r=>r.l.contact===c).length]).filter(x=>x[1]).map(x=>`${x[0]} ${x[1]}`).join(' · ')+` · بدون ${rows.filter(r=>!r.l.contact).length}`);
+  const ly=rows.filter(r=>!sure(r)&&r.l.coming_likely===true).length, ln=rows.filter(r=>!sure(r)&&r.l.coming_likely===false).length;
+  const cy=rows.filter(r=>r.l.coming===true).length, cn=rows.filter(r=>r.l.coming===false).length;
+  const comingSub=sub(`نعم ${cy} · أغلب اه ${ly} · أغلب لا ${ln} · لا ${cn} · لسا ${rows.length-cy-cn-ly-ln}`);
+  const contactSub=sub(CONTACTS.map(c=>[c,rows.filter(r=>r.l.contact===c).length]).filter(x=>x[1]).map(x=>`${x[0]} ${x[1]}`).join(' · ')+` · لسا ${rows.filter(r=>!r.l.contact).length}`);
   const tot=r=>+(r.l.total??DEFAULT_TOTAL), paid=r=>+(r.l.paid_amount||0);
-  const paidSub=sub(`دفع كامل ${rows.filter(r=>r.l.paid_amount!=null&&paid(r)>=tot(r)).length} · المجموع ${rows.reduce((a,r)=>a+paid(r),0).toLocaleString('en')}`);
-  let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم'+sub(rows.length+' شخص')+'</th><th>مين هيكلمه؟'+contactSub+'</th><th>كلمناه؟'+ynSub('contacted')+'</th><th>هييجي؟'+comingSub+'</th><th>اتضاف للجروب؟'+ynSub('in_group')+'</th><th>دفع (المدفوع / الإجمالي)'+paidSub+'</th>'+BOOLS.map(b=>`<th>${b[1]}${ynSub(b[0])}</th>`).join('')+'</tr></thead><tbody>';
+  const full=going.filter(r=>r.l.paid_amount!=null&&paid(r)>=tot(r)).length, part=going.filter(r=>paid(r)>0&&paid(r)<tot(r)).length;
+  const paidSub=sub(`كامل ${full} · جزء ${part} · لسا ${going.length-full-part} · المجموع ${going.reduce((a,r)=>a+paid(r),0).toLocaleString('en')}`);
+  const goNote=`<span class="hc" style="color:#9ca3af">من ${going.length} جايين</span>`;
+  let h='<thead><tr><th class="rank">#</th><th class="nm">الاسم'+sub(rows.length+' شخص')+'</th><th>مين هيكلمه؟'+contactSub+'</th><th>كلمناه؟'+ynSub('contacted',rows)+'</th><th>هييجي؟'+comingSub+'</th><th>اتضاف للجروب؟'+ynSub('in_group',going)+goNote+'</th><th>دفع (المدفوع / الإجمالي)'+paidSub+goNote+'</th>'+BOOLS.map(b=>`<th>${b[1]}${ynSub(b[0],going)}${goNote}</th>`).join('')+'</tr></thead><tbody>';
   if(!rows.length) h+='<tr><td></td><td class="nm">مفيش حد لسه. علّم "هنقوله؟" بنعم في التقرير أو ضيف يدويًا.</td>'+'<td></td>'.repeat(5+BOOLS.length)+'</tr>';
   rows.forEach((r,i)=>{ const k=ci(r), bg=k===CONTACTS.length?ADMIN_BG:(Number.isInteger(k)?SHADES[k%SHADES.length]:'#12151b'), first=i===0||grp(rows[i-1])!==grp(r);
     h+=`<tr style="--rowbg:${bg}" class="clus${first&&i>0?' first':''}${r.l.coming===false?' out':''}"><td class="rank">${i+1}</td><td class="nm">${r.manual?`<button class="x" data-logdel="${r.id}" title="حذف">✕</button>`:''}${esc(r.name)}${r.manual?' <span class="mini" style="display:inline">(يدوي)</span>':''}</td>
